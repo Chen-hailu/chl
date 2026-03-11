@@ -7,10 +7,14 @@ clear
 
 %% 1. Prepare input data
 addpath '.\weighted_InSAR strified_delay_estimation'
-ts_file='timeseries_SET.h5';% Sentinel time series derived from MintPy and ISCE2
-s=3;% Descending take as 3; Ascending take as 1
-[phase,longitude1,latitude1,height1]= read_H5data(ts_file,s);
-save InSAR_input.mat phase phase longitude1 latitude1 height1
+% ts_file='timeseries_SET.h5';% Sentinel time series derived from MintPy and ISCE2
+% s=3;% Descending take as 3; Ascending take as 1
+% [phase,longitude1,latitude1,height1]= read_H5data(ts_file,s);
+% save InSAR_input.mat  phase longitude1 latitude1 height1
+% 
+% 
+
+load InSAR_input.mat  phase longitude1 latitude1 height1
 
 %% 2. Predefined parameters
  Number_segments=40;%Used for calculating covariance
@@ -26,7 +30,7 @@ imagesc(height1);colorbar;colormap(jet)
 height1=height1./(max(height1(:))-min(height1(:)));
 
 %% 5. Set up the function model for estimating stratification
-order=2; %  1:first-order linear;2::second-order linear(When there is a large height difference, adopt)
+order=3; %  1:first-order linear;2:second-order linear;3:third-order linear(When there is a large height difference, adopt)
 
 %% 6. Establish a differential time series as the observed values to weaken the influence of deformation.
 for i=1:size(phase,3)-1
@@ -50,40 +54,15 @@ location(any(isnan(location),2),:) = [];
   
 clear location longitude1_sample latitude1_sample
 %% 8. Estimate the parameters of the linear model
-%for i=2:size(phase_diff_sample,3)-190
-for i=2
+for i=1:size(phase_diff_sample,3)
      l=phase_diff_sample(:,:,i);
-     [par_weight(i,:),par_unweight(i,:)]=Par_estimation(l,height1_sample,DS,Number_segments,order);
+     [par_weight(i,:),par_unweight(i,:),hgt]=Par_estimation(l,height1_sample,DS,Number_segments,order);
      i
  end
 
 %% 9. time series correction
-figure
-imagesc(phase_diff(:,:,2));colorbar;caxis([-5 5])
-hold on
-figure
-imagesc(phase_diff(:,:,2)-height1.*0.83600432);colorbar;caxis([-5 5])
-
-
-
-dem=height1(:);
-dem(any(isnan(dem),2),:) = [];
-if order==1
-     hgt=dem;
-end
-if order==2
-     hgt=[dem dem.*dem];
-end
-
-Str_correction=zeros(size(phase_diff_sample,1),size(phase_diff_sample,2),size(phase_diff_sample,3));
-Str_correction(:,:,1)=0;
-for i=2:size(phase_diff_sample,3)
-  Str_correction(:,:,i)=Str_correction(:,:,i-1)+ hgt
-
-end
-
-
-
+ Str_correction=calculate_correction_timeseries(par_weight,height1,order);
+ imagesc( Str_correction(:,:,2));colorbar
 %% 10. Outlooks
 % For situations where stratification needs to be estimated, after the window has been divided, the model coefficients can be estimated using weighted methods.
 % The remaining severe turbulence has not been dealt with yet. We will update the code for handling turbulence in the future.
