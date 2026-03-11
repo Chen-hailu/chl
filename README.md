@@ -1,4 +1,4 @@
-An open source code in Matlab for InSAR Stratified Tropospheric Delay Correction using Iterative Weighted Least Squares, and can be used with MintPy hdf5 outputs directly.
+An open source code in Matlab for InSAR Stratified Tropospheric Delay Correction using Iterative Weighted Least Squares, and can be used with MintPy hdf5 outputs directly. The function model can be modified according to the requirements, including higher-order polynomials and block-based estimations.
 
 main.m is the Main function！
 
